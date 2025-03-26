@@ -40,22 +40,22 @@ def save_data():
 # Homepage
 def homepage(page):
     def update_todo_list(sort_by="time", filter_by="all"):
-        today = datetime.now().date()
-        today_todos = [todo for todo in todos if todo["date"] == today.strftime("%Y-%m-%d")]
+        # Remove filtering by today's date to show all tasks
+        all_todos = todos
 
         # Filter tasks based on the selected filter
         if filter_by == "done":
-            filtered_todos = [todo for todo in today_todos if todo["done"]]
+            filtered_todos = [todo for todo in all_todos if todo["done"]]
         elif filter_by == "todo":
-            filtered_todos = [todo for todo in today_todos if not todo["done"]]
+            filtered_todos = [todo for todo in all_todos if not todo["done"]]
         else:
-            filtered_todos = today_todos  # Show all tasks
+            filtered_todos = all_todos  # Show all tasks
 
         # Sorting
         if sort_by == "time":
             filtered_todos.sort(key=lambda x: x["time"])
         elif sort_by == "name":
-            filtered_todos.sort(key=lambda x: x["name"])
+            filtered_todos.sort(key=lambda x: x["name"])  # Corrected lambda syntax
         elif sort_by == "category":
             filtered_todos.sort(key=lambda x: x["category"])
 
@@ -73,7 +73,7 @@ def homepage(page):
                         )
                     ),
                     subtitle=ft.Text(f"Category: {todo['category']}, Time: {todo['time']}"),
-                    leading=ft.Checkbox(value=todo["done"], on_change=lambda e, t=todo: toggle_done(t)),
+                    leading=ft.Checkbox(value=todo["done"], on_change=lambda e: toggle_done(todo)),
                     trailing=ft.IconButton(  # Add delete button
                         icon=ft.icons.DELETE,
                         icon_color="red",
@@ -171,8 +171,8 @@ def add_todo_page(page):
     def add_todo(e):
         todos.append({
             "name": name_input.value,
-            "date": selected_date,
-            "time": selected_time,
+            "date": date_input.value,  # Use the value from the date input field
+            "time": time_input.value,  # Use the value from the time input field
             "category": category_dropdown.value,
             "location": location_input.value,
             "done": done_checkbox.value,
@@ -180,38 +180,13 @@ def add_todo_page(page):
         save_data()
         page.go("/")  # Return to homepage
 
-    def update_date_display(e):
-        nonlocal selected_date
-        selected_date = e.data  # Use e.data to get the selected date
-        date_display.value = selected_date
-        date_display.update()
-
-    def update_time_display(e):
-        nonlocal selected_time
-        selected_time = e.data  # Use e.data to get the selected time
-        time_display.value = selected_time
-        time_display.update()
-
-    # Initialize DatePicker and TimePicker
-    selected_date = datetime.now().strftime("%Y-%m-%d")  # Default to today's date
-    selected_time = datetime.now().strftime("%H:%M")  # Default to current time
-
-    date_picker = ft.DatePicker(
-        on_change=update_date_display,  # Trigger update when a date is selected
-    )
-    time_picker = ft.TimePicker(
-        on_change=update_time_display,  # Trigger update when a time is selected
-    )
-
     # UI Elements
     name_input = ft.TextField(label="To-Do Name", width=300)
+    date_input = ft.TextField(label="Date (YYYY-MM-DD)", width=300, hint_text="e.g., 2023-10-01")
+    time_input = ft.TextField(label="Time (HH:MM)", width=300, hint_text="e.g., 14:30")
     category_dropdown = ft.Dropdown(label="Category", options=[ft.dropdown.Option(c) for c in categories], width=300)
     location_input = ft.TextField(label="Location", width=300)
     done_checkbox = ft.Checkbox(label="Done", value=False)
-
-    # Display for selected date and time
-    date_display = ft.Text(selected_date)
-    time_display = ft.Text(selected_time)
 
     return ft.Container(
         expand=True,  # Allow the container to expand and enable scrolling
@@ -220,14 +195,8 @@ def add_todo_page(page):
             controls=[
                 ft.Text("Add a To-Do", size=20, weight="bold"),
                 name_input,
-                ft.Row([ft.Text("Date:"), ft.TextButton(
-                    text=date_display.value,
-                    on_click=lambda _: setattr(date_picker, "open", True),  # Open the DatePicker
-                )]),
-                ft.Row([ft.Text("Time:"), ft.TextButton(
-                    text=time_display.value,
-                    on_click=lambda _: setattr(time_picker, "open", True),  # Open the TimePicker
-                )]),
+                date_input,  # Replace DatePicker with a simple text field
+                time_input,  # Replace TimePicker with a simple text field
                 category_dropdown,
                 location_input,
                 done_checkbox,
